@@ -67,16 +67,16 @@
             size_hint_y: 0.15
 
             on_press:
-                root.manager.current = "game"
-                root.manager.transition.direction = "left"
+                root.go_game()
+                root.updatelabels()
 
         ButtonMenu:
             text: " HARDMODE "
             size_hint_y: 0.15
 
             on_press:
-                root.manager.current = "game"
-                root.manager.transition.direction = "left"
+                root.go_hardmode()
+                root.updatelabels()
 
         BoxLayout:
             size_hint_y: 0.15
@@ -154,15 +154,26 @@
                 size_hint_x: 0.8
                 pos_hint: {'center_x': 1}
             Label:
+                id: hp_label
                 text: str(root.hp)
                 font_size: '56sp'
                 size_hint_x: 0.8
                 pos_hint: {'center_x': 2}
+                opacity: 0 if root.hardmodee == False else 1
 
             # Кнопка-іконка "Дім"
             ButtonIcon:
                 text: '\uE08A'
                 on_press: root.go_home()
+        BoxLayout:
+            size_hint_y: 0.02
+            Label:
+                id: fish_label
+                text: 'Cuchetka'
+                font_size: '40sp'
+                size_hint_x: 0.2
+                pos_hint: {'center_x': 0.5}
+                opacity: 0 if root.hardmodee == False else 1
 
         # Ігрова область
         FloatLayout:

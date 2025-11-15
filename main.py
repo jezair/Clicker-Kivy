@@ -9,6 +9,7 @@ from kivy.uix.image import Image
 from kivy import platform
 from kivy.properties import NumericProperty
 from kivy.clock import Clock
+from random import randint
 
 
 class Menu(Screen):
@@ -17,8 +18,21 @@ class Menu(Screen):
 
     # Перехід до екрана гри
     def go_game(self, *args):
+        game_screen = self.manager.get_screen("game")
+        game_screen.hardmodee = False
         self.manager.current = "game"
         self.manager.transition.direction = "left"
+
+    def go_hardmode(self, *args):
+        game_screen = self.manager.get_screen("game")
+        game_screen.hardmodee = True
+        self.manager.current = "game"
+        self.manager.transition.direction = "left"
+
+    def updatelabels(self):
+        game_screen = self.manager.get_screen("game")
+        game_screen.ids.hp_label.opacity = 1 if game_screen.hardmodee else 0
+        game_screen.ids.fish_label.opacity = 1 if game_screen.hardmodee else 0
 
     # Перехід до екрана налаштувань
     def go_settings(self, *args):
@@ -64,9 +78,34 @@ class Fish(RotatedImage):
         return super().on_kv_post(base_widget)
 
     def new_fish(self, *args):
-        self.fish_current = app.LEVELS[app.LEVEL][self.fish_index]
-        self.source = app.FISHES[self.fish_current]['source']
-        self.hp_current = app.FISHES[self.fish_current]['hp']
+        game_screen = self.parent.parent.parent
+        global whitch_fishe, hidden_fishe
+        if game_screen.hid_fish_count >= 2:
+            game_screen.hid_fish_restrict = 5
+        if game_screen.hardmodee:
+            whitch_fishe = randint(0,1)
+            hidden_fishe =  bool(randint(0,1))
+            if hidden_fishe and game_screen.hid_fish_restrict == 0:
+                game_screen.hid_fish_count += 1
+            else:
+                game_screen.hid_fish_count = 0
+            if game_screen.hid_fish_restrict > 0:
+                hidden_fishe = False
+                game_screen.hid_fish_restrict -= 1
+            if not hidden_fishe:
+                self.source = 'assets/images/fish_02.png' if randint(0,1) == 1 else 'assets/images/fish_01.png'
+            else:
+                self.source = 'assets/images/fish_hidden.png'
+            self.hp_current = randint(10,30)
+            if not hidden_fishe:
+                game_screen.ids.fish_label.text = "Angry fish" if whitch_fishe == 1 else "Normal fish"
+            else:
+                game_screen.ids.fish_label.text = "The fish hid!"
+        else:
+            self.fish_current = app.LEVELS[app.LEVEL][self.fish_index]
+            self.source = app.FISHES[self.fish_current]['source']
+            self.hp_current = app.FISHES[self.fish_current]['hp']
+
 
         self.swim()
 
@@ -107,6 +146,7 @@ class Fish(RotatedImage):
             return
 
         if not self.anim_play and not self.interaction_block:
+            game_screen = self.parent.parent.parent
             self.hp_current -= 1
             self.GAME_SCREEN.score += 1
 
@@ -135,7 +175,7 @@ class Fish(RotatedImage):
                 self.defeated()
 
                 # Запуск нової риби або анімації завершення рівня після 1 секунди програвання зникнення риби
-                if len(app.LEVELS[app.LEVEL]) > self.fish_index + 1:
+                if len(app.LEVELS[app.LEVEL]) > self.fish_index + 1 or game_screen.hardmodee:
                     self.fish_index += 1
                     Clock.schedule_once(self.new_fish, 1.2)
                 else:
@@ -147,7 +187,9 @@ class Fish(RotatedImage):
 class Game(Screen):
     score = NumericProperty(0)
     hp = NumericProperty(100)
-    hardmodee = NumericProperty(0)
+    hardmodee = False
+    hid_fish_count = 0
+    hid_fish_restrict = 0
 
     def on_pre_enter(self, *args):
         self.score = 0
