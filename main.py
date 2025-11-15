@@ -48,6 +48,8 @@ class RotatedImage(Image):
 # КЛАС РИБИ: Обробка кліків, створення "нової" риби
 class Fish(RotatedImage):
     # Властивість для забезпечення програвання однієї анімації в один проміжок часу
+    whitch_fishe = None #0 нормальна рибка, 1 зла рибка.
+    hidden_fishe = None
     anim_play = False
     interaction_block = True
     COEF_MULT = 1.5
@@ -108,7 +110,7 @@ class Fish(RotatedImage):
             self.hp_current -= 1
             self.GAME_SCREEN.score += 1
 
-            # Клік призвів до змеьшення hp риби
+            # Клік призвів до зменьшення hp риби
             if self.hp_current > 0:
                 # Запам'ятовуємо старі розмір і позицію для анімації зменьшення
                 old_size = self.size.copy()
@@ -132,7 +134,7 @@ class Fish(RotatedImage):
             else:
                 self.defeated()
 
-                # Запуск нової риби або анымації завершення рівня після 1 секунди програвання зникнення риби
+                # Запуск нової риби або анімації завершення рівня після 1 секунди програвання зникнення риби
                 if len(app.LEVELS[app.LEVEL]) > self.fish_index + 1:
                     self.fish_index += 1
                     Clock.schedule_once(self.new_fish, 1.2)
@@ -144,6 +146,8 @@ class Fish(RotatedImage):
 
 class Game(Screen):
     score = NumericProperty(0)
+    hp = NumericProperty(100)
+    hardmodee = NumericProperty(0)
 
     def on_pre_enter(self, *args):
         self.score = 0

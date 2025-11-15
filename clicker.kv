@@ -70,6 +70,14 @@
                 root.manager.current = "game"
                 root.manager.transition.direction = "left"
 
+        ButtonMenu:
+            text: " HARDMODE "
+            size_hint_y: 0.15
+
+            on_press:
+                root.manager.current = "game"
+                root.manager.transition.direction = "left"
+
         BoxLayout:
             size_hint_y: 0.15
 
@@ -145,6 +153,11 @@
                 font_size: '56sp'
                 size_hint_x: 0.8
                 pos_hint: {'center_x': 1}
+            Label:
+                text: str(root.hp)
+                font_size: '56sp'
+                size_hint_x: 0.8
+                pos_hint: {'center_x': 2}
 
             # Кнопка-іконка "Дім"
             ButtonIcon:
