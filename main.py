@@ -175,7 +175,7 @@ class ClickerApp(App):
 
     FISHES = {
         'fish1':
-            {'source': 'assets/images/fish_01.png', 'hp': 10},
+            {'source': 'assets/images/fish1.png', 'hp': 10},
         'fish2':
             {'source': 'assets/images/fish_02.png', 'hp': 20}
     }
