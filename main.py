@@ -27,12 +27,13 @@ class Menu(Screen):
         game_screen = self.manager.get_screen("game")
         game_screen.hardmodee = True
         self.manager.current = "game"
-        self.manager.transition.direction = "left"
+        self.manager.transition.direction = "right"
 
     def updatelabels(self):
         game_screen = self.manager.get_screen("game")
         game_screen.ids.hp_label.opacity = 1 if game_screen.hardmodee else 0
         game_screen.ids.fish_label.opacity = 1 if game_screen.hardmodee else 0
+        game_screen.ids.dismiss_fish_button.opacity = 1 if game_screen.hardmodee else 0
 
     # Перехід до екрана налаштувань
     def go_settings(self, *args):
@@ -147,8 +148,11 @@ class Fish(RotatedImage):
 
         if not self.anim_play and not self.interaction_block:
             game_screen = self.parent.parent.parent
-            self.hp_current -= 1
-            self.GAME_SCREEN.score += 1
+            if game_screen.hardmodee and whitch_fishe == 1:
+                game_screen.hp -= 2
+            else:
+                self.hp_current -= 1
+                self.GAME_SCREEN.score += 1
 
             # Клік призвів до зменьшення hp риби
             if self.hp_current > 0:
@@ -180,13 +184,16 @@ class Fish(RotatedImage):
                     Clock.schedule_once(self.new_fish, 1.2)
                 else:
                     Clock.schedule_once(self.GAME_SCREEN.level_complete, 1.2)
+                
+                if game_screen.hardmodee and self.GAME_SCREEN.hp <= 0:
+                    Clock.schedule_once(self.GAME_SCREEN.lose_game, 1.2)
+
 
         return super().on_touch_down(touch)
 
-
 class Game(Screen):
     score = NumericProperty(0)
-    hp = NumericProperty(100)
+    hp = NumericProperty(25)
     hardmodee = False
     hid_fish_count = 0
     hid_fish_restrict = 0
@@ -195,7 +202,10 @@ class Game(Screen):
         self.score = 0
         app.LEVEL = 0
         self.ids.level_complete.opacity = 0
+        self.hid_fish_count = 0
+        self.hid_fish_restrict = 0
         self.ids.fish.fish_index = 0
+        self.ids.lose_game.opacity = 0
 
         return super().on_pre_enter(*args)
 
@@ -210,12 +220,21 @@ class Game(Screen):
     def level_complete(self, *args):
         # self.ids.level_complete.opacity = 1
         self.ids.level_complete.opacity = 1
+    def lose_game(self, *args):
+        self.ids.lose_game.opacity = 1
 
     def go_home(self):
         self.manager.current = "menu"
-        self.manager.transition.direction = "right"
-
-
+        if self.hardmodee:
+            self.manager.transition.direction = "left"
+        else:
+            self.manager.transition.direction = "right"
+        self.hp = 25
+    def dissmiss_fish(self):
+        self.ids.fish.defeated()
+        Clock.schedule_once(self.ids.fish.new_fish, 1.2)
+        if self.hardmodee and self.hp <= 0:
+            Clock.schedule_once(self.lose_game, 1.2)
 class ClickerApp(App):
     LEVEL = 0
 

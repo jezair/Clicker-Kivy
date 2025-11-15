@@ -71,7 +71,7 @@
                 root.updatelabels()
 
         ButtonMenu:
-            text: " HARDMODE "
+            text: " RISKY PLAY "
             size_hint_y: 0.15
 
             on_press:
@@ -129,7 +129,6 @@
     size: dp(200), dp(200)
     allow_stretch: True
     opacity: 0
-
 
 <Game>:
     BoxLayout:
@@ -194,6 +193,28 @@
                 x: root.width / 2 - self.width / 2
                 y: root.height / 2 - self.height / 2 + dp(100)
                 opacity: 0
+
+            Label:
+                id: lose_game
+                text: '  You\nDied!'
+                color: from_hex('#FA003F')
+                font_size: '50sp'
+                size_hint_y: None
+                height: self.texture_size[1]
+                x: root.width / 2 - self.width / 2
+                y: root.height / 2 - self.height / 2 + dp(100)
+                opacity: 0
+
+        BoxLayout:
+            size_hint_y: 0.02 
+            ButtonMenu:
+                id: dismiss_fish_button
+                text: 'dismiss fish'
+                font_size: '50sp'
+                size_hint_x: 0.2
+                opacity: 0 if root.hardmodee == False else 1
+                on_press:
+                    root.dissmiss_fish() if root.hardmodee else None
 
         # Нижнє меню
         BoxLayout:
