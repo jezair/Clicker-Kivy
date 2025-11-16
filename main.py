@@ -34,6 +34,11 @@ class Menu(Screen):
         game_screen.ids.hp_label.opacity = 1 if game_screen.hardmodee else 0
         game_screen.ids.fish_label.opacity = 1 if game_screen.hardmodee else 0
         game_screen.ids.dismiss_fish_button.opacity = 1 if game_screen.hardmodee else 0
+        game_screen.ids.buy_curtains_button.opacity = 1 if game_screen.hardmodee else 0
+        game_screen.ids.curtainone.opacity = 1 if game_screen.hardmodee and game_screen.Curtains_current >= 1 else 0
+        game_screen.ids.curtaintwo.opacity = 1 if game_screen.hardmodee and game_screen.Curtains_current >= 2 else 0
+        game_screen.ids.curtainthree.opacity = 1 if game_screen.hardmodee and game_screen.Curtains_current >= 3 else 0
+        game_screen.ids.curtainfour.opacity = 1 if game_screen.hardmodee and game_screen.Curtains_current >= 4 else 0
 
     # Перехід до екрана налаштувань
     def go_settings(self, *args):
@@ -54,23 +59,53 @@ class Settings(Screen):
         self.manager.current = "menu"
         self.manager.transition.direction = "down"
 
+class Shop(Screen):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    # Повернення до меню
+    def go_game(self, *args):
+        self.manager.current = "game"
+        self.manager.transition.direction = "up"
+
 
 # Клас для обертання картинок; в класі, який спадковує потрібно дадати властивість angle
 class RotatedImage(Image):
     ...
 
 
+class Curtains(RotatedImage):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.usede = False
+    angle = NumericProperty(0)
+
+    def Use(self, *args):
+        game_screen = self.parent.parent.parent
+        game_screen.Curtains_current -= 1
+        game_screen.ids.fish.findfish()
+        self.opacity = 0
+        self.usede = True
+    
+    def on_touch_down(self, touch):
+        game_screen = self.parent.parent.parent
+        if game_screen.ids.fish.hidden_fishe and not self.usede and self.collide_point(*touch.pos) and game_screen.hardmodee:
+            self.Use()
+        return super().on_touch_down(touch)
+
 # КЛАС РИБИ: Обробка кліків, створення "нової" риби
 class Fish(RotatedImage):
     # Властивість для забезпечення програвання однієї анімації в один проміжок часу
-    whitch_fishe = None #0 нормальна рибка, 1 зла рибка.
-    hidden_fishe = None
-    anim_play = False
-    interaction_block = True
-    COEF_MULT = 1.5
-    fish_current = None
-    fish_index = 0
-    hp_current = None
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.whitch_fishe = None #0 нормальна рибка, 1 зла рибка.
+        self.hidden_fishe = None
+        self.anim_play = False
+        self.interaction_block = True
+        self.COEF_MULT = 1.5
+        self.fish_current = None
+        self.fish_index = 0
+        self.hp_current = None
     angle = NumericProperty(0)
 
     def on_kv_post(self, base_widget):
@@ -80,26 +115,25 @@ class Fish(RotatedImage):
 
     def new_fish(self, *args):
         game_screen = self.parent.parent.parent
-        global whitch_fishe, hidden_fishe
         if game_screen.hid_fish_count >= 2:
-            game_screen.hid_fish_restrict = 5
+            game_screen.hid_fish_restrict = 3
         if game_screen.hardmodee:
-            whitch_fishe = randint(0,1)
-            hidden_fishe =  bool(randint(0,1))
-            if hidden_fishe and game_screen.hid_fish_restrict == 0:
+            self.whitch_fishe = randint(0,1)
+            self.hidden_fishe =  bool(randint(0,1))
+            if self.hidden_fishe and game_screen.hid_fish_restrict == 0:
                 game_screen.hid_fish_count += 1
             else:
                 game_screen.hid_fish_count = 0
             if game_screen.hid_fish_restrict > 0:
-                hidden_fishe = False
+                self.hidden_fishe = False
                 game_screen.hid_fish_restrict -= 1
-            if not hidden_fishe:
+            if not self.hidden_fishe:
                 self.source = 'assets/images/fish_02.png' if randint(0,1) == 1 else 'assets/images/fish_01.png'
             else:
                 self.source = 'assets/images/fish_hidden.png'
             self.hp_current = randint(10,30)
-            if not hidden_fishe:
-                game_screen.ids.fish_label.text = "Angry fish" if whitch_fishe == 1 else "Normal fish"
+            if not self.hidden_fishe:
+                game_screen.ids.fish_label.text = "Angry fish" if self.whitch_fishe == 1 else "Normal fish"
             else:
                 game_screen.ids.fish_label.text = "The fish hid!"
         else:
@@ -109,6 +143,20 @@ class Fish(RotatedImage):
 
 
         self.swim()
+
+    def findfish(self, *args):
+        game_screen = self.parent.parent.parent
+        if self.hidden_fishe:
+            self.hidden_fishe =  0
+            if not self.hidden_fishe:
+                self.source = 'assets/images/fish_02.png' if randint(0,1) == 1 else 'assets/images/fish_01.png'
+            else:
+                self.source = 'assets/images/fish_hidden.png'
+            if not self.hidden_fishe:
+                game_screen.ids.fish_label.text = "Angry fish" if self.whitch_fishe == 1 else "Normal fish"
+            else:
+                game_screen.ids.fish_label.text = "The fish hid!"
+
 
     def swim(self):
         self.pos = (self.GAME_SCREEN.x - self.width, self.GAME_SCREEN.height / 2)
@@ -148,7 +196,7 @@ class Fish(RotatedImage):
 
         if not self.anim_play and not self.interaction_block:
             game_screen = self.parent.parent.parent
-            if game_screen.hardmodee and whitch_fishe == 1:
+            if game_screen.hardmodee and self.whitch_fishe == 1:
                 game_screen.hp -= 2
             else:
                 self.hp_current -= 1
@@ -192,22 +240,31 @@ class Fish(RotatedImage):
         return super().on_touch_down(touch)
 
 class Game(Screen):
+    shope = False
     score = NumericProperty(0)
     hp = NumericProperty(25)
     hardmodee = False
     hid_fish_count = 0
     hid_fish_restrict = 0
+    Curtains_current = NumericProperty(2)
+    Curtains_max = NumericProperty(4)
+    
 
     def on_pre_enter(self, *args):
-        self.score = 0
-        app.LEVEL = 0
-        self.ids.level_complete.opacity = 0
-        self.hid_fish_count = 0
-        self.hid_fish_restrict = 0
-        self.ids.fish.fish_index = 0
-        self.ids.lose_game.opacity = 0
+        if not self.shope:
+            self.score = 0
+            app.LEVEL = 0
+            self.ids.level_complete.opacity = 0
+            self.hid_fish_count = 0
+            self.hid_fish_restrict = 0
+            self.ids.fish.fish_index = 0
+            self.ids.lose_game.opacity = 0
+            self.ids.curtainone.usede = False
+            self.ids.curtaintwo.usede = False
+            self.ids.curtainthree.usede = False
+            self.ids.curtainfour.usede = False
 
-        return super().on_pre_enter(*args)
+            return super().on_pre_enter(*args)
 
     def on_enter(self, *args):
         self.start_game()
@@ -215,13 +272,27 @@ class Game(Screen):
         return super().on_enter(*args)
 
     def start_game(self):
-        self.ids.fish.new_fish()
+        if not self.shope:
+            self.ids.fish.new_fish()
 
     def level_complete(self, *args):
         # self.ids.level_complete.opacity = 1
         self.ids.level_complete.opacity = 1
+
     def lose_game(self, *args):
         self.ids.lose_game.opacity = 1
+
+    def buy_curtain(self, much):
+        if self.Curtains_current + much <= self.Curtains_max and self.score >= much * 75:
+            self.Curtains_current += much
+            self.score -= much * 75
+            self.respowntaniouscombustion()
+
+    def respowntaniouscombustion(self):
+        self.ids.curtainone.opacity = 1 if self.hardmodee and self.Curtains_current >= 1 else 0
+        self.ids.curtaintwo.opacity = 1 if self.hardmodee and self.Curtains_current >= 2 else 0
+        self.ids.curtainthree.opacity = 1 if self.hardmodee and self.Curtains_current >= 3 else 0
+        self.ids.curtainfour.opacity = 1 if self.hardmodee and self.Curtains_current >= 4 else 0
 
     def go_home(self):
         self.manager.current = "menu"
@@ -230,6 +301,12 @@ class Game(Screen):
         else:
             self.manager.transition.direction = "right"
         self.hp = 25
+        self.shope = False
+
+    def go_shop(self):
+        self.manager.current = "shop"
+        self.manager.transition.direction = "down"
+        self.shope = True
     def dissmiss_fish(self):
         self.ids.fish.defeated()
         Clock.schedule_once(self.ids.fish.new_fish, 1.2)
@@ -254,6 +331,7 @@ class ClickerApp(App):
         sm.add_widget(Menu(name="menu"))
         sm.add_widget(Game(name="game"))
         sm.add_widget(Settings(name="settings"))
+        sm.add_widget(Shop(name="shop"))
 
         return sm
 

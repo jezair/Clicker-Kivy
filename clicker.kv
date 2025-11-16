@@ -130,6 +130,13 @@
     allow_stretch: True
     opacity: 0
 
+<Curtains>:
+    source: 'assets/images/Curtain.png'
+    size_hint: None, None
+    size: dp(75), dp(75)
+    allow_stretch: True
+    opacity: 1
+
 <Game>:
     BoxLayout:
         orientation: "vertical"
@@ -210,11 +217,18 @@
             ButtonMenu:
                 id: dismiss_fish_button
                 text: 'dismiss fish'
-                font_size: '50sp'
+                font_size: '25sp'
                 size_hint_x: 0.2
                 opacity: 0 if root.hardmodee == False else 1
                 on_press:
                     root.dissmiss_fish() if root.hardmodee else None
+            ButtonMenu:
+                id: buy_curtains_button
+                text: 'Buy Curtains'
+                font_size: '25sp'
+                size_hint_x: 0.2
+                on_press:
+                    root.go_shop() if root.hardmodee else None
 
         # Нижнє меню
         BoxLayout:
@@ -227,10 +241,115 @@
                 size_hint_x: None
                 font_size: '38sp'
                 pos_hint: {'y': 0}
+            
+            Curtains:
+                id: curtainone
+                opacity: 1 if root.hardmodee and usede == False else 0
+                pos_hint: {'center_x': 0.5}
+            
+            Curtains:
+                id: curtaintwo
+                opacity: 1 if root.hardmodee and usede == False else 0
+                pos_hint: {'center_x': 0.5}
+            
+            Curtains:
+                id: curtainthree
+                opacity: 1 if root.hardmodee and usede == False else 0
+                pos_hint: {'center_x': 0.5}
+
+            Curtains:
+                id: curtainfour
+                opacity: 1 if root.hardmodee and usede == False else 0
+                pos_hint: {'center_x': 0.5}    
+        
 
         # Icon
         # Label:
         #     font_name: 'assets/typicons.ttf'
         #     text: '\uE08A'
         #     font_size: '56sp'
+
+<Shop>:
+
+    canvas:
+        Rectangle:
+            source: 'assets/images/back.png'
+            pos: self.pos
+            size: self.size
+
+    BoxLayout:
+        orientation: "vertical"
+        padding: "10dp"
+        spacing: "10dp"
+
+        Label:
+            text: "Shop"
+            font_size: "40sp"
+
+        BoxLayout:
+            orientation: "horizontal"
+            padding: "10dp"
+            spacing: "10dp"
+
+            Label:
+                text: "1 curtain - 75 points"
+                font_size: "20sp"
+            
+            ButtonIcon:
+                text: "\uE065"
+                font_size: "20sp"
+                on_press:
+                    root.manager.get_screen('game').buy_curtain(1)
+
+        BoxLayout:
+            orientation: "horizontal"
+            padding: "10dp"
+            spacing: "10dp"
+
+            Label:
+                text: "2 curtains - 150 points"
+                font_size: "20sp"
+            
+            ButtonIcon:
+                text: "\uE065"
+                font_size: "20sp"
+                on_press:
+                    root.manager.get_screen('game').buy_curtain(2)
+
+        BoxLayout:
+            orientation: "horizontal"
+            padding: "10dp"
+            spacing: "10dp"
+
+            Label:
+                text: "3 curtains - 225 points"
+                font_size: "20sp"
+            
+            ButtonIcon:
+                text: "\uE065"
+                font_size: "20sp"
+                on_press:
+                    root.manager.get_screen('game').buy_curtain(3)
+
+        BoxLayout:
+            orientation: "horizontal"
+            padding: "10dp"
+            spacing: "10dp"
+
+            Label:
+                text: "4 curtains - 300 points"
+                font_size: "20sp"
+            
+            ButtonIcon:
+                text: "\uE065"
+                font_size: "20sp"
+                on_press:
+                    root.manager.get_screen('game').buy_curtain(4)
+
+        ButtonMenu:
+            text: "Back"
+            font_size: "30sp"
+            size_hint_y: 0.2
+            on_press:
+                root.go_game()
 
