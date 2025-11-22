@@ -9,45 +9,46 @@ from kivy.uix.image import Image
 from kivy import platform
 from kivy.properties import NumericProperty
 from kivy.clock import Clock
-
+from kivy.core.audio import SoundLoader   # <<< використовуємо SoundLoader
+import os
 
 class Menu(Screen):
     def __init__(self, **kw):
         super().__init__(**kw)
 
-    # Перехід до екрана гри
     def go_game(self, *args):
         self.manager.current = "game"
         self.manager.transition.direction = "left"
 
-    # Перехід до екрана налаштувань
     def go_settings(self, *args):
         self.manager.current = "settings"
         self.manager.transition.direction = "up"
 
-    # Вихід з програми
     def exit_app(self, *args):
-        app.stop()
+        app_inst = App.get_running_app()
+        if getattr(app_inst, "music", None):
+            try:
+                app_inst.music.stop()
+                print("Music stopped.")
+            except Exception as e:
+                print("Error stopping music:", e)
+        App.get_running_app().stop()
 
 
 class Settings(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-    # Повернення до меню
     def go_menu(self, *args):
         self.manager.current = "menu"
         self.manager.transition.direction = "down"
 
 
-# Клас для обертання картинок; в класі, який спадковує потрібно дадати властивість angle
 class RotatedImage(Image):
-    ...
+    pass
 
 
-# КЛАС РИБИ: Обробка кліків, створення "нової" риби
 class Fish(RotatedImage):
-    # Властивість для забезпечення програвання однієї анімації в один проміжок часу
     anim_play = False
     interaction_block = True
     COEF_MULT = 1.5
@@ -57,15 +58,14 @@ class Fish(RotatedImage):
     angle = NumericProperty(0)
 
     def on_kv_post(self, base_widget):
+        # Game screen — це два рівні вверх в ієрархії у твоєму kv
         self.GAME_SCREEN = self.parent.parent.parent
-
         return super().on_kv_post(base_widget)
 
     def new_fish(self, *args):
-        self.fish_current = app.LEVELS[app.LEVEL][self.fish_index]
-        self.source = app.FISHES[self.fish_current]['source']
-        self.hp_current = app.FISHES[self.fish_current]['hp']
-
+        self.fish_current = App.get_running_app().LEVELS[App.get_running_app().LEVEL][self.fish_index]
+        self.source = App.get_running_app().FISHES[self.fish_current]['source']
+        self.hp_current = App.get_running_app().FISHES[self.fish_current]['hp']
         self.swim()
 
     def swim(self):
@@ -73,34 +73,26 @@ class Fish(RotatedImage):
         self.opacity = 1
         swim = Animation(x=self.GAME_SCREEN.width / 2 - self.width / 2, duration=1)
         swim.start(self)
-
         swim.bind(on_complete=lambda w, a: setattr(self, "interaction_block", False))
 
-    # Перемогли рибу :)
     def defeated(self):
         self.interaction_block = True
-        # Анімація обертання
         anim = Animation(angle=self.angle + 360, d=1, t='in_cubic')
 
-        # Запам'ятовуємо старі розмір і позицію для анімації зменьшення
         old_size = self.size.copy()
         old_pos = self.pos.copy()
-        # Новий розмір
-        new_size = (self.size[0] * self.COEF_MULT * 3, self.size[1] * self.COEF_MULT * 3)
-        # Нова позиція риби при збільшенні
-        new_pos = (self.pos[0] - (new_size[0] - self.size[0]) / 2, self.pos[1] - (new_size[0] - self.size[1]) / 2)
-        # АНІМАЦІЯ ЗБІЛЬШЕННЯ/ЗМЕНЬШЕННЯ
-        anim &= Animation(size=(new_size), t='in_out_bounce') + Animation(size=(old_size), duration=0)
-        anim &= Animation(pos=(new_pos), t='in_out_bounce') + Animation(pos=(old_pos), duration=0)
 
-        # anim = Animation(size=(self.size[0] * self.COEF_MULT * 2, self.size[1] * self.COEF_MULT * 2)) + Animation(size=old_size)
-        anim &= Animation(opacity=0)  # + Animation(opacity = 1)
+        new_size = (self.size[0] * self.COEF_MULT * 3, self.size[1] * self.COEF_MULT * 3)
+        new_pos = (self.pos[0] - (new_size[0] - self.size[0]) / 2,
+                   self.pos[1] - (new_size[1] - self.size[1]) / 2)
+
+        anim &= Animation(size=new_size, t='in_out_bounce') + Animation(size=old_size, duration=0)
+        anim &= Animation(pos=new_pos, t='in_out_bounce') + Animation(pos=old_pos, duration=0)
+        anim &= Animation(opacity=0)
+
         anim.start(self)
 
-    # КЛІК!
     def on_touch_down(self, touch):
-        # Клік не обробляється, якщо не потрпаляє в рибу 
-        # або анімація зараз програється або заблокована взаємодія
         if not self.collide_point(*touch.pos) or self.anim_play or self.interaction_block:
             return
 
@@ -108,32 +100,25 @@ class Fish(RotatedImage):
             self.hp_current -= 1
             self.GAME_SCREEN.score += 1
 
-            # Клік призвів до змеьшення hp риби
             if self.hp_current > 0:
-                # Запам'ятовуємо старі розмір і позицію для анімації зменьшення
                 old_size = self.size.copy()
                 old_pos = self.pos.copy()
 
-                # Новий розмір
                 new_size = (self.size[0] * self.COEF_MULT, self.size[1] * self.COEF_MULT)
-                # Нова позиція риби при збільшенні
                 new_pos = (self.pos[0] - (new_size[0] - self.size[0]) / 2,
-                           self.pos[1] - (new_size[0] - self.size[1]) / 2)
+                           self.pos[1] - (new_size[1] - self.size[1]) / 2)
 
-                # АНІМАЦІЯ ЗБІЛЬШЕННЯ/ЗМЕНЬШЕННЯ
-                zoom_anim = Animation(size=(new_size), duration=0.05) + Animation(size=(old_size), duration=0.05)
-                zoom_anim &= Animation(pos=(new_pos), duration=0.05) + Animation(pos=(old_pos), duration=0.05)
+                zoom_anim = Animation(size=new_size, duration=0.05) + Animation(size=old_size, duration=0.05)
+                zoom_anim &= Animation(pos=new_pos, duration=0.05) + Animation(pos=old_pos, duration=0.05)
 
                 zoom_anim.start(self)
                 self.anim_play = True
-
                 zoom_anim.bind(on_complete=lambda *args: setattr(self, "anim_play", False))
-            # Клік призвів до знищення риби
+
             else:
                 self.defeated()
 
-                # Запуск нової риби або анымації завершення рівня після 1 секунди програвання зникнення риби
-                if len(app.LEVELS[app.LEVEL]) > self.fish_index + 1:
+                if len(App.get_running_app().LEVELS[App.get_running_app().LEVEL]) > self.fish_index + 1:
                     self.fish_index += 1
                     Clock.schedule_once(self.new_fish, 1.2)
                 else:
@@ -147,23 +132,30 @@ class Game(Screen):
 
     def on_pre_enter(self, *args):
         self.score = 0
-        app.LEVEL = 0
-        self.ids.level_complete.opacity = 0
-        self.ids.fish.fish_index = 0
-
+        App.get_running_app().LEVEL = 0
+        # якщо id-ів немає в kv — це може викликати помилку, переконайся, що в твоєму kv є level_complete і fish
+        try:
+            self.ids.level_complete.opacity = 0
+            self.ids.fish.fish_index = 0
+        except Exception as e:
+            print("Warning: ids not found in Game.on_pre_enter:", e)
         return super().on_pre_enter(*args)
 
     def on_enter(self, *args):
         self.start_game()
-
         return super().on_enter(*args)
 
     def start_game(self):
-        self.ids.fish.new_fish()
+        try:
+            self.ids.fish.new_fish()
+        except Exception as e:
+            print("Error starting game (ids.fish):", e)
 
     def level_complete(self, *args):
-        # self.ids.level_complete.opacity = 1
-        self.ids.level_complete.opacity = 1
+        try:
+            self.ids.level_complete.opacity = 1
+        except Exception:
+            pass
 
     def go_home(self):
         self.manager.current = "menu"
@@ -172,12 +164,11 @@ class Game(Screen):
 
 class ClickerApp(App):
     LEVEL = 0
+    music = None
 
     FISHES = {
-        'fish1':
-            {'source': 'assets/images/fish_01.png', 'hp': 10},
-        'fish2':
-            {'source': 'assets/images/fish_02.png', 'hp': 20}
+        'fish1': {'source': 'assets/images/fish_01.png', 'hp': 10},
+        'fish2': {'source': 'assets/images/fish_02.png', 'hp': 20}
     }
 
     LEVELS = [
@@ -185,16 +176,52 @@ class ClickerApp(App):
     ]
 
     def build(self):
+        # Шляхи, які будемо пробувати
+        base_paths = [
+            'assets/audios/music.mp3',  # твій mp3
+            'assets/audios/music.ogg',  # спроба ogg
+            'assets/audios/music.wav'   # спроба wav
+        ]
+
+        # Перевіримо відносні/абсолютні шляхи та наявність файлу
+        found = False
+        for p in base_paths:
+            if os.path.exists(p):
+                print("Found audio file:", p)
+                self.music = SoundLoader.load(p)
+                if self.music:
+                    print("Music loaded:", p, " — length:", getattr(self.music, 'length', 'unknown'))
+                    found = True
+                    break
+                else:
+                    print("SoundLoader failed to load (provider issue?) for:", p)
+            else:
+                print("Audio file not found at:", p)
+
+        if not found:
+            print("No playable audio loaded. Convert your music to .ogg or .wav and place into assets/audios/")
+        else:
+            try:
+                self.music.volume = 0.5
+                # деякі провайдери не мають атрибута loop — перевіряємо
+                if hasattr(self.music, "loop"):
+                    self.music.loop = True
+                # Спробуємо запустити
+                status = self.music.play()
+                print("Attempted to play music, play() returned:", status)
+            except Exception as e:
+                print("Error when trying to play music:", e)
+
         sm = ScreenManager()
         sm.add_widget(Menu(name="menu"))
         sm.add_widget(Game(name="game"))
         sm.add_widget(Settings(name="settings"))
-
         return sm
 
 
 if platform != 'android':
     Window.size = (450, 900)
 
-app = ClickerApp()
-app.run()
+if __name__ == '__main__':
+    app = ClickerApp()
+    app.run()
