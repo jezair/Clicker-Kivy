@@ -264,7 +264,7 @@ class Game(Screen):
             self.ids.curtainthree.usede = False
             self.ids.curtainfour.usede = False
 
-            return super().on_pre_enter(*args)
+        return super().on_pre_enter(*args)
 
     def on_enter(self, *args):
         self.start_game()
@@ -290,9 +290,13 @@ class Game(Screen):
 
     def respowntaniouscombustion(self):
         self.ids.curtainone.opacity = 1 if self.hardmodee and self.Curtains_current >= 1 else 0
+        self.ids.curtainone.usede = 1 if self.hardmodee and self.Curtains_current >= 1 else 0
         self.ids.curtaintwo.opacity = 1 if self.hardmodee and self.Curtains_current >= 2 else 0
+        self.ids.curtaintwo.usede = 1 if self.hardmodee and self.Curtains_current >= 2 else 0
         self.ids.curtainthree.opacity = 1 if self.hardmodee and self.Curtains_current >= 3 else 0
+        self.ids.curtainthree.usede = 1 if self.hardmodee and self.Curtains_current >= 3 else 0
         self.ids.curtainfour.opacity = 1 if self.hardmodee and self.Curtains_current >= 4 else 0
+        self.ids.curtainfour.usede = 1 if self.hardmodee and self.Curtains_current >= 4 else 0
 
     def go_home(self):
         self.manager.current = "menu"
