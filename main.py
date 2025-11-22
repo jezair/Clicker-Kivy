@@ -258,6 +258,7 @@ class Game(Screen):
             self.hid_fish_count = 0
             self.hid_fish_restrict = 0
             self.ids.fish.fish_index = 0
+            self.Curtains_current = 2
             self.ids.lose_game.opacity = 0
             self.ids.curtainone.usede = False
             self.ids.curtaintwo.usede = False
