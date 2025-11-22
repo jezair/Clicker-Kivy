@@ -58,49 +58,48 @@ class Fish(RotatedImage):
         self.GAME_SCREEN = self.parent.parent.parent
         return super().on_kv_post(base_widget)
 
-    # ====== ОСТАНОВКА ВСЕХ АНИМАЦИЙ И ТАЙМЕРОВ ======
     def stop_all_movement(self):
         Animation.cancel_all(self)
         Clock.unschedule(self.update_fish_movement)
-    # ==================================================
 
     def new_fish(self, *args):
-        # СБРОС ВСЕХ АНИМАЦИЙ — ФИКС ПРОПАДАЮЩЕЙ РЫБЫ
         self.stop_all_movement()
 
         self.fish_current = app.LEVELS[app.LEVEL][self.fish_index]
         self.source = app.FISHES[self.fish_current]['source']
         self.hp_current = app.FISHES[self.fish_current]['hp']
 
-        self.wave_time = 0   # reset wave phase
+        self.wave_time = 0
 
         self.swim()
 
-    # ==== ПЛАВАНИЕ РЫБЫ ====================================================
     def swim(self):
         self.opacity = 1
         self.interaction_block = False
 
-        # ставим рыбу в центр
-        self.center_x = self.GAME_SCREEN.width / 2
-        self.center_y = self.GAME_SCREEN.height / 2
+        # ставим рыбу строго в центре (не выходит за края)
+        self.x = (self.GAME_SCREEN.width - self.width) / 2
+        self.y = (self.GAME_SCREEN.height - self.height) / 2
 
-        # волна
         Clock.schedule_interval(self.update_fish_movement, 1 / 60)
 
-        # случайные перемещения
         self.start_random_movement()
 
-    # ---- СВОБОДНОЕ СЛУЧАЙНОЕ ДВИЖЕНИЕ ------------------------------------
+    # ============= ОБНОВЛЁННОЕ ДВИЖЕНИЕ — строго внутри экрана =============
     def start_random_movement(self, *args):
         if self.interaction_block:
             return
 
-        offset_x = self.GAME_SCREEN.width * 0.8
-        offset_y = self.GAME_SCREEN.height * 0.3
+        # рыба дотрагивается до краёв, НО НЕ ВЫХОДИТ ЗА НИХ
+        min_x = 0
+        max_x = self.GAME_SCREEN.width - self.width
 
-        new_x = random.randint(int(-offset_x), int(self.GAME_SCREEN.width + offset_x))
-        new_y = random.randint(int(-offset_y), int(self.GAME_SCREEN.height + offset_y))
+        min_y = 0
+        max_y = self.GAME_SCREEN.height - self.height
+
+        # выбираем точку ТОЛЬКО в реальной зоне, без воздуха
+        new_x = random.randint(int(min_x), int(max_x))
+        new_y = random.randint(int(min_y), int(max_y))
 
         distance = ((new_x - self.x) ** 2 + (new_y - self.y) ** 2) ** 0.5
         duration = distance / 150
@@ -109,14 +108,16 @@ class Fish(RotatedImage):
         anim.bind(on_complete=self.start_random_movement)
         anim.start(self)
 
-    # ------------------------------------------------------------------------
-
+    # ============= ОГРАНИЧЕНИЕ ВОЛНЫ, чтоб не вылетала ======================
     def update_fish_movement(self, dt):
         if self.interaction_block:
             return
 
         self.wave_time += dt * 4
         self.y += math.sin(self.wave_time) * 8
+
+        # ограничение ровно по краям
+        self.y = max(0, min(self.y, self.GAME_SCREEN.height - self.height))
 
     # =======================================================================
 
