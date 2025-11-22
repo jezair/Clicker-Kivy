@@ -6,9 +6,52 @@ from kivy.utils import hex_colormap, colormap
 from kivy.animation import Animation
 from kivy.metrics import sp, dp
 from kivy.uix.image import Image
+from kivy.uix.floatlayout import FloatLayout
 from kivy import platform
-from kivy.properties import NumericProperty
+from kivy.properties import NumericProperty, ObjectProperty
 from kivy.clock import Clock
+from PIL import Image as PILImage
+from kivy.graphics.texture import Texture
+import io
+
+
+class AnimatedGIF(Image):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.frames = []
+        self.current_frame = 0
+        self.animating = False
+        Clock.schedule_once(self.load_gif)
+
+    def load_gif(self, dt):
+        try:
+            print("Loading GIF...")
+            gif = PILImage.open('assets/123123.gif')
+            self.frames = []
+            print(f"GIF has {gif.n_frames} frames")
+            
+            for frame in range(gif.n_frames):
+                gif.seek(frame)
+                img = gif.convert('RGBA')
+                texture = Texture.create(size=img.size, colorfmt='rgba')
+                texture.blit_buffer(img.tobytes(), colorfmt='rgba', bufferfmt='ubyte')
+                self.frames.append(texture)
+            
+            print(f"Loaded {len(self.frames)} frames")
+            if self.frames:
+                self.texture = self.frames[0]
+                self.size = self.texture.size
+            self.animating = True
+            self.animate()
+        except Exception as e:
+            print(f"Error loading GIF: {e}")
+
+    def animate(self, dt=None):
+        if self.animating and self.frames:
+            self.current_frame = (self.current_frame + 1) % len(self.frames)
+            self.texture = self.frames[self.current_frame]
+            self.size = self.texture.size
+            Clock.schedule_once(self.animate, 0.1)
 
 
 class Menu(Screen):
@@ -57,7 +100,11 @@ class Fish(RotatedImage):
     angle = NumericProperty(0)
 
     def on_kv_post(self, base_widget):
-        self.GAME_SCREEN = self.parent.parent.parent
+        # Find the Game screen (parent of parent of parent)
+        current = self.parent
+        while current and not hasattr(current, 'score'):
+            current = current.parent
+        self.GAME_SCREEN = current
 
         return super().on_kv_post(base_widget)
 
@@ -155,8 +202,50 @@ class Game(Screen):
 
     def on_enter(self, *args):
         self.start_game()
-
+        self.load_gif_background()
         return super().on_enter(*args)
+
+    def load_gif_background(self):
+        try:
+            # Load GIF using PIL and create textures in memory
+            from PIL import Image as PILImage
+            from kivy.graphics.texture import Texture
+            
+            gif = PILImage.open('assets/123123.gif')
+            self.gif_frames = []
+            self.current_gif_frame = 0
+            
+            # Create textures for all frames
+            for frame in range(gif.n_frames):
+                gif.seek(frame)
+                img = gif.convert('RGBA')
+                # Flip the image horizontally and vertically
+                img = img.transpose(PILImage.FLIP_LEFT_RIGHT)
+                img = img.transpose(PILImage.FLIP_TOP_BOTTOM)
+                
+                # Create high-quality texture
+                texture = Texture.create(size=img.size, colorfmt='rgba', mipmap=True)
+                texture.blit_buffer(img.tobytes(), colorfmt='rgba', bufferfmt='ubyte')
+                texture.mag_filter = 'linear'
+                texture.min_filter = 'linear'
+                self.gif_frames.append(texture)
+            
+            # Set first frame
+            if self.gif_frames:
+                self.ids.gif_background.texture = self.gif_frames[0]
+                # Set size to window size for full screen coverage
+                self.ids.gif_background.size = (Window.width, Window.height)
+            
+            # Start animation
+            Clock.schedule_once(self.animate_gif_direct, 0.1)
+        except Exception as e:
+            print(f"Error loading GIF background: {e}")
+
+    def animate_gif_direct(self, dt):
+        if hasattr(self, 'gif_frames') and self.gif_frames:
+            self.current_gif_frame = (self.current_gif_frame + 1) % len(self.gif_frames)
+            self.ids.gif_background.texture = self.gif_frames[self.current_gif_frame]
+            Clock.schedule_once(self.animate_gif_direct, 0.1)
 
     def start_game(self):
         self.ids.fish.new_fish()
@@ -175,7 +264,7 @@ class ClickerApp(App):
 
     FISHES = {
         'fish1':
-            {'source': 'assets/images/fish1.png', 'hp': 10},
+            {'source': 'assets/fish1.png', 'hp': 10},
         'fish2':
             {'source': 'assets/images/fish_02.png', 'hp': 20}
     }

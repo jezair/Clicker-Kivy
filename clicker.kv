@@ -7,7 +7,7 @@
 
 
 <Widget>:
-    font_name: 'assets/Lemon-Regular.ttf'
+    font_name: 'assets/Minecraft.ttf'
 
 
 <ButtonMenu@Button>:
@@ -116,7 +116,7 @@
 
 
 <Fish>:
-    source: 'assets/images/fish1.png'
+    source: 'assets/fish1.png'
     size_hint: None, None
     size: dp(200), dp(200)
     allow_stretch: True
@@ -124,68 +124,65 @@
 
 
 <Game>:
-    BoxLayout:
-        orientation: "vertical"
-        padding: "30dp"
-        spacing: "20dp"
+    FloatLayout:
+        # Animated GIF background
+        Image:
+            id: gif_background
+            size_hint: 1, 1
+            pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+            allow_stretch: True
+            keep_ratio: False
 
-        canvas:
-            Rectangle:
-                source: 'assets/images/back_game.png'
-                pos: self.pos
-                size: self.size
-
-        # Верхнє меню
         BoxLayout:
-            size_hint_y: 0.12
+            orientation: "vertical"
+            padding: "30dp"
+            spacing: "20dp"
+            size_hint: 1, 1
 
-            # Текстовий напис "Бали"
-            Label:
-                text: str(root.score)
-                font_size: '56sp'
-                size_hint_x: 0.8
-                pos_hint: {'center_x': 1}
+            # Верхнє меню
+            BoxLayout:
+                size_hint_y: 0.12
 
-            # Кнопка-іконка "Дім"
-            ButtonIcon:
-                text: '\uE08A'
-                on_press: root.go_home()
+                # Текстовий напис "Бали"
+                Label:
+                    text: str(root.score)
+                    font_size: '56sp'
+                    size_hint_x: 0.8
+                    pos_hint: {'center_x': 1}
 
-        # Ігрова область
-        FloatLayout:
-            size_hint_y: 0.76
-            id: game_window
+                # Кнопка-іконка "Дім"
+                ButtonIcon:
+                    text: '\uE08A'
+                    on_press: root.go_home()
 
-            Fish:
-                id: fish
-                center: root.center
+            # Ігрова область
+            FloatLayout:
+                size_hint_y: 0.76
+                id: game_window
 
-            Label:
-                id: level_complete
-                text: '    Level\ncomplete!'
-                color: from_hex('#12F3AF')#colormap['lawngreen']
-                font_size: '50sp'
-                size_hint_y: None
-                height: self.texture_size[1]
-                x: root.width / 2 - self.width / 2
-                y: root.height / 2 - self.height / 2 + dp(100)
-                opacity: 0
+                Fish:
+                    id: fish
+                    center: root.center
 
-        # Нижнє меню
-        BoxLayout:
-            size_hint_y: 0.12
+                Label:
+                    id: level_complete
+                    text: '    Level\ncomplete!'
+                    color: from_hex('#12F3AF')#colormap['lawngreen']
+                    font_size: '50sp'
+                    size_hint_y: None
+                    height: self.texture_size[1]
+                    x: root.width / 2 - self.width / 2
+                    y: root.height / 2 - self.height / 2 + dp(100)
+                    opacity: 0
 
-            # Кнопка-іконка "Налаштування"
-            ButtonMenu:
-                font_name: 'assets/typicons.ttf'
-                text: '\uE04F'
-                size_hint_x: None
-                font_size: '38sp'
-                pos_hint: {'y': 0}
+            # Нижнє меню
+            BoxLayout:
+                size_hint_y: 0.12
 
-        # Icon
-        # Label:
-        #     font_name: 'assets/typicons.ttf'
-        #     text: '\uE08A'
-        #     font_size: '56sp'
-
+                # Кнопка-іконка "Налаштування"
+                ButtonMenu:
+                    font_name: 'assets/typicons.ttf'
+                    text: '\uE04F'
+                    size_hint_x: None
+                    font_size: '38sp'
+                    pos_hint: {'y': 0}
