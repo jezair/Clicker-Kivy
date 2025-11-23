@@ -260,10 +260,10 @@ class Game(Screen):
             self.ids.fish.fish_index = 0
             self.Curtains_current = 2
             self.ids.lose_game.opacity = 0
-            self.ids.curtainone.usede = False
-            self.ids.curtaintwo.usede = False
-            self.ids.curtainthree.usede = False
-            self.ids.curtainfour.usede = False
+            self.ids.curtainone.usede = False if self.hardmodee and self.Curtains_current >= 1 else True
+            self.ids.curtaintwo.usede = False if self.hardmodee and self.Curtains_current >= 1 else True
+            self.ids.curtainthree.usede = False if self.hardmodee and self.Curtains_current >= 1 else True
+            self.ids.curtainfour.usede = False if self.hardmodee and self.Curtains_current >= 1 else True
 
         return super().on_pre_enter(*args)
 
@@ -291,13 +291,13 @@ class Game(Screen):
 
     def respowntaniouscombustion(self):
         self.ids.curtainone.opacity = 1 if self.hardmodee and self.Curtains_current >= 1 else 0
-        self.ids.curtainone.usede = 1 if self.hardmodee and self.Curtains_current >= 1 else 0
+        self.ids.curtainone.usede = 0 if self.hardmodee and self.Curtains_current >= 1 else 1
         self.ids.curtaintwo.opacity = 1 if self.hardmodee and self.Curtains_current >= 2 else 0
-        self.ids.curtaintwo.usede = 1 if self.hardmodee and self.Curtains_current >= 2 else 0
+        self.ids.curtaintwo.usede = 0 if self.hardmodee and self.Curtains_current >= 2 else 1
         self.ids.curtainthree.opacity = 1 if self.hardmodee and self.Curtains_current >= 3 else 0
-        self.ids.curtainthree.usede = 1 if self.hardmodee and self.Curtains_current >= 3 else 0
+        self.ids.curtainthree.usede = 0 if self.hardmodee and self.Curtains_current >= 3 else 1
         self.ids.curtainfour.opacity = 1 if self.hardmodee and self.Curtains_current >= 4 else 0
-        self.ids.curtainfour.usede = 1 if self.hardmodee and self.Curtains_current >= 4 else 0
+        self.ids.curtainfour.usede = 0 if self.hardmodee and self.Curtains_current >= 4 else 1
 
     def go_home(self):
         self.manager.current = "menu"
