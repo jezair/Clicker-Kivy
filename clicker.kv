@@ -4,7 +4,9 @@
 
 #:set main_color '#ef852e'
 #:set main_color_dark "#c96e24"
-
+#:set accent_color '#FFD700'
+#:set bg_color '#1A237E'
+#:set text_color '#FFFFFF'
 
 <Widget>:
     font_name: 'assets/Minecraft.ttf'
@@ -16,25 +18,63 @@
     background_color: 0, 0, 0, 0
     size_hint: None, None
     pos_hint: {"center_x": 0.5}
-    width: self.texture_size[0] + dp(40)   # ширина = текст + відступи
+    width: self.texture_size[0] + dp(60)
+    color: 1, 1, 1, 1
 
     canvas.before:
+        # Shadow effect
         Color:
-            rgba: colormap['white']
+            rgba: 0, 0, 0, 0.3
         RoundedRectangle:
-			size: self.size
-			pos: self.pos
-			radius: [self.font_size]
-		Color:
-			rgba: from_hex(main_color) if self.state == 'normal' else from_hex(main_color_dark)
-		RoundedRectangle:
-			size: self.size[0] - dp(6), self.size[1] - dp(6)
-			pos: self.pos[0] + dp(3), self.pos[1] + dp(3)
-			radius: [self.font_size]
+            size: self.size[0] + dp(8), self.size[1] + dp(8)
+            pos: self.pos[0] - dp(4), self.pos[1] - dp(4)
+            radius: [dp(25)]
+        # Main button background
+        Color:
+            rgba: 0.2, 0.6, 1, 1 if self.state == 'normal' else 0.15, 0.5, 1
+        RoundedRectangle:
+            size: self.size
+            pos: self.pos
+            radius: [dp(25)]
+        # Inner glow
+        Color:
+            rgba: 0.5, 0.8, 1, 0.6
+        RoundedRectangle:
+            size: self.size[0] - dp(8), self.size[1] - dp(8)
+            pos: self.pos[0] + dp(4), self.pos[1] + dp(4)
+            radius: [dp(20)]
 
 
 <ButtonIcon@ButtonMenu>:
     font_name: 'assets/typicons.ttf'
+    font_size: "38sp"
+    width: dp(60)
+    height: dp(60)
+    color: 1, 1, 1, 1
+    
+    canvas.before:
+        # Shadow effect
+        Color:
+            rgba: 0, 0, 0, 0.3
+        RoundedRectangle:
+            size: self.size[0] + dp(6), self.size[1] + dp(6)
+            pos: self.pos[0] - dp(3), self.pos[1] - dp(3)
+            radius: [dp(15)]
+        # Main button background
+        Color:
+            rgba: 0.9, 0.3, 0.3, 1 if self.state == 'normal' else 0.7, 0.2, 1
+        RoundedRectangle:
+            size: self.size
+            pos: self.pos
+            radius: [dp(15)]
+        # Inner highlight
+        Color:
+            rgba: 1, 0.5, 0.5, 0.4
+        RoundedRectangle:
+            size: self.size[0] - dp(6), self.size[1] - dp(6)
+            pos: self.pos[0] + dp(3), self.pos[1] + dp(3)
+            radius: [dp(12)]
+
 
 <Menu>:
     BoxLayout:
@@ -44,31 +84,39 @@
 
         canvas:
             Rectangle:
-                source: 'assets/images/back_menu.png'
-                size: dp(750), self.size[1]
-                pos: self.center_x - dp(750) / 2, self.y
+                source: 'assets/back_ground.jpeg'
+                size: self.size
+                pos: self.pos
 
         Widget:
-            size_hint_y: 0.05
+            size_hint_y: 0.15
 
         Label:
             text: "UNDERWATER\nCLICKER"
             font_size: "54sp"
             halign: "center"
-            size_hint_y: 0.15
+            size_hint_y: 0.25
 
-        Image:
-            source: "assets/images/title.png"
-            allow_stretch: True
-            size_hint_y: 0.5
+        BoxLayout:
+            orientation: "vertical"
+            size_hint_y: 0.7
+            Image:
+                id: title_image
+                source: "assets/images/title.png"
+                allow_stretch: False
+                keep_ratio: True
+                size_hint_y: None
+                height: dp(500)
 
-        ButtonMenu:
-            text: " PLAY "
-            size_hint_y: 0.15
+            ButtonMenu:
+                text: " PLAY "
+                size_hint_y: None
+                height: dp(120)
+                on_press:
+                    root.go_game()
 
-            on_press:
-                root.manager.current = "game"
-                root.manager.transition.direction = "left"
+        Widget:
+            size_hint_y: 0.0
 
         BoxLayout:
             size_hint_y: 0.15
@@ -119,24 +167,46 @@
     source: 'assets/fish1.png'
     size_hint: None, None
     size: dp(200), dp(200)
-    allow_stretch: True
     opacity: 0
+    scale: 1.0
+    canvas.before:
+        PushMatrix
+        Scale:
+            origin: self.center
+            x: self.scale
+            y: self.scale
+        Rotate:
+            angle: self.angle
+            axis: 0, 0, 1
+            origin: self.center
+    canvas.after:
+        PopMatrix
 
 
 <Game>:
+    # Main container with no padding or margins
     FloatLayout:
-        # Animated GIF background
+        # Background GIF - will cover entire screen
         Image:
             id: gif_background
-            size_hint: 1, 1
-            pos_hint: {'center_x': 0.5, 'center_y': 0.5}
+            size_hint: None, None
+            size: root.width, root.height
+            pos: 0, 0
             allow_stretch: True
             keep_ratio: False
+            canvas.before:
+                Color:
+                    rgba: 1, 1, 1, 1
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+                    texture: self.texture
 
+        # Main content container
         BoxLayout:
             orientation: "vertical"
-            padding: "30dp"
-            spacing: "20dp"
+            padding: 0
+            spacing: 0
             size_hint: 1, 1
 
             # Верхнє меню
@@ -153,6 +223,31 @@
                 # Кнопка-іконка "Дім"
                 ButtonIcon:
                     text: '\uE08A'
+                    width: dp(70)
+                    height: dp(70)
+                    color: 1, 1, 1, 1
+                    canvas.before:
+                        # Shadow
+                        Color:
+                            rgba: 0, 0, 0, 0.4
+                        RoundedRectangle:
+                            size: self.size[0] + dp(8), self.size[1] + dp(8)
+                            pos: self.pos[0] - dp(4), self.pos[1] - dp(4)
+                            radius: [dp(20)]
+                        # Gradient background
+                        Color:
+                            rgba: 0.9, 0.3, 0.3, 1 if self.state == 'normal' else 0.7, 0.2, 0.2, 1
+                        RoundedRectangle:
+                            size: self.size
+                            pos: self.pos
+                            radius: [dp(20)]
+                        # Inner glow
+                        Color:
+                            rgba: 1, 0.5, 0.5, 0.6
+                        RoundedRectangle:
+                            size: self.size[0] - dp(8), self.size[1] - dp(8)
+                            pos: self.pos[0] + dp(4), self.pos[1] + dp(4)
+                            radius: [dp(16)]
                     on_press: root.go_home()
 
             # Ігрова область
@@ -178,6 +273,8 @@
             # Нижнє меню
             BoxLayout:
                 size_hint_y: 0.12
+                padding: "20dp"
+                spacing: "20dp"
 
                 # Кнопка-іконка "Налаштування"
                 ButtonMenu:
@@ -186,3 +283,4 @@
                     size_hint_x: None
                     font_size: '38sp'
                     pos_hint: {'y': 0}
+                    on_press: root.go_settings()
