@@ -12,6 +12,7 @@ from kivy.properties import NumericProperty, ObjectProperty, BooleanProperty
 from kivy.clock import Clock
 from kivy.uix.screenmanager import SlideTransition, FadeTransition, SwapTransition
 import io
+import os
 
 
 class Menu(Screen):
@@ -306,6 +307,14 @@ class ClickerApp(App):
     ]
 
     def build(self):
+        # Set the window icon
+        try:
+            icon_path = os.path.join(os.path.dirname(__file__), 'assets', 'images', 'Clicker.png')
+            if os.path.exists(icon_path):
+                Window.set_icon(icon_path)
+        except Exception as e:
+            print(f"Could not set window icon: {e}")
+        
         sm = ScreenManager()
         sm.add_widget(Menu(name="menu"))
         sm.add_widget(Game(name="game"))
