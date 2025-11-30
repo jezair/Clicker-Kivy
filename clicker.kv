@@ -1,44 +1,67 @@
 #:import from_hex kivy.utils.get_color_from_hex
 #:import to_rgba kivy.utils.rgba
 #:import colormap kivy.utils.colormap
+#:import TimeManager main.TimeManager
+#:import sin math.sin
 
-#:set main_color '#FF6B35'
-#:set main_color_dark "#CC4422"
-#:set accent_color '#FFD700'
-#:set bg_color '#0D47A1'
-#:set text_color '#FFFFFF'
+#:set main_color '#1E88E5'
+#:set main_color_dark "#0D47A1"
+#:set accent_color '#26C6DA'
+#:set bg_color_dark '#001528'
+#:set bg_color_light '#00334F'
+#:set accent_color_neon '#64FFDA'
+#:set text_color '#E3F2FD'
+#:set pastel_blue '#4FC3F7'
+#:set pastel_pink '#FFB6C1'
+#:set pastel_green '#81C784'
 
 <Widget>:
     font_name: 'assets/Minecraft.ttf'
 
 
 <ButtonMenu@Button>:
+
     font_size: "56sp"
     bold: True
     background_color: 0, 0, 0, 0
+
     size_hint: None, None
     pos_hint: {"center_x": 0.5}
     width: self.texture_size[0] + dp(60)
-    color: 1, 1, 1, 1
+    color: from_hex(text_color)
 
     canvas.before:
-        # Light transparent shadow
+        # Gray outer glow
         Color:
-            rgba: 0, 0, 0, 0.2
+            rgba: from_hex(main_color_dark) + [0.6]
+        RoundedRectangle:
+            size: self.size[0] + dp(20), self.size[1] + dp(20)
+            pos: self.pos[0] - dp(10), self.pos[1] - dp(10)
+            radius: [dp(35)]
+        # Secondary glow
+        Color:
+            rgba: from_hex(accent_color_neon) + [0.35]
+        RoundedRectangle:
+            size: self.size[0] + dp(16), self.size[1] + dp(16)
+            pos: self.pos[0] - dp(8), self.pos[1] - dp(8)
+            radius: [dp(30)]
+        # Light shadow
+        Color:
+            rgba: 0, 0, 0, 0.18
         RoundedRectangle:
             size: self.size[0] + dp(8), self.size[1] + dp(8)
             pos: self.pos[0] - dp(4), self.pos[1] - dp(4)
             radius: [dp(25)]
-        # Main button background - higher contrast
+        # Main button background - uses main palette, darker when pressed
         Color:
-            rgba: 0.1, 0.4, 0.9, 1 if self.state == 'normal' else 0.05, 0.3, 0.8, 1
+            rgba: from_hex(main_color_dark) if self.state == 'down' else from_hex(main_color)
         RoundedRectangle:
             size: self.size
             pos: self.pos
             radius: [dp(25)]
-        # Stronger inner glow
+        # Inner highlight / pressed effect
         Color:
-            rgba: 0.7, 0.9, 1, 0.8
+            rgba: from_hex(accent_color) + [0.18] if self.state == 'normal' else from_hex(accent_color_neon) + [0.35]
         RoundedRectangle:
             size: self.size[0] - dp(8), self.size[1] - dp(8)
             pos: self.pos[0] + dp(4), self.pos[1] + dp(4)
@@ -46,34 +69,50 @@
 
 
 <ButtonIcon@ButtonMenu>:
+
     font_name: 'assets/typicons.ttf'
     font_size: "38sp"
-    width: dp(60)
-    height: dp(60)
-    color: 1, 1, 1, 1
+    width: dp(80)
+
+    height: dp(80)
+    color: from_hex(text_color)
     
     canvas.before:
-        # Light transparent shadow
+        # Gray outer glow (icons)
         Color:
-            rgba: 0, 0, 0, 0.2
+            rgba: from_hex(main_color_dark) + [0.6]
         RoundedRectangle:
-            size: self.size[0] + dp(6), self.size[1] + dp(6)
-            pos: self.pos[0] - dp(3), self.pos[1] - dp(3)
-            radius: [dp(15)]
-        # Main button background - higher contrast red
+            size: self.size[0] + dp(20), self.size[1] + dp(20)
+            pos: self.pos[0] - dp(10), self.pos[1] - dp(10)
+            radius: [dp(35)]
+        # Secondary glow
         Color:
-            rgba: 0.95, 0.2, 0.2, 1 if self.state == 'normal' else 0.8, 0.1, 0.1, 1
+            rgba: from_hex(accent_color_neon) + [0.35]
+        RoundedRectangle:
+            size: self.size[0] + dp(16), self.size[1] + dp(16)
+            pos: self.pos[0] - dp(8), self.pos[1] - dp(8)
+            radius: [dp(30)]
+        # Light shadow
+        Color:
+            rgba: 0, 0, 0, 0.18
+        RoundedRectangle:
+            size: self.size[0] + dp(8), self.size[1] + dp(8)
+            pos: self.pos[0] - dp(4), self.pos[1] - dp(4)
+            radius: [dp(25)]
+        # Main button background - uses main palette, darker when pressed
+        Color:
+            rgba: from_hex(main_color_dark) if self.state == 'down' else from_hex(main_color)
         RoundedRectangle:
             size: self.size
             pos: self.pos
-            radius: [dp(15)]
-        # Stronger inner highlight
+            radius: [dp(25)]
+        # Inner highlight / pressed effect
         Color:
-            rgba: 1, 0.6, 0.6, 0.6
+            rgba: from_hex(accent_color) + [0.18] if self.state == 'normal' else from_hex(accent_color_neon) + [0.35]
         RoundedRectangle:
-            size: self.size[0] - dp(6), self.size[1] - dp(6)
-            pos: self.pos[0] + dp(3), self.pos[1] + dp(3)
-            radius: [dp(12)]
+            size: self.size[0] - dp(8), self.size[1] - dp(8)
+            pos: self.pos[0] + dp(4), self.pos[1] + dp(4)
+            radius: [dp(20)]
 
 
 <Menu>:
@@ -83,20 +122,34 @@
         spacing: "20dp"
 
         canvas:
+            # Gradient background (disabled coloring)
+            Color:
+                rgba: 0, 0, 0, 0
+            Rectangle:
+                size: self.size
+                pos: self.pos
+            Color:
+                rgba: 0, 0, 0, 0
+            Rectangle:
+                size: self.size[0], self.size[1] * 0.6
+                pos: self.pos
+            # Original background image without extra tint
+            Color:
+                rgba: 1, 1, 1, 1
             Rectangle:
                 source: 'assets/back_ground.jpeg'
                 size: self.size
                 pos: self.pos
 
         Widget:
-            size_hint_y: 0.15
+            size_hint_y: 0.08
 
         Label:
             text: "UNDERWATER\nCLICKER"
             font_size: "54sp"
             halign: "center"
             size_hint_y: 0.25
-            color: 1, 1, 1, 1
+            color: from_hex(text_color)
             canvas.before:
                 # Blur background
                 Color:
@@ -122,23 +175,33 @@
         BoxLayout:
             orientation: "vertical"
             size_hint_y: 0.7
+            
             Image:
                 id: title_image
                 source: "assets/images/title.png"
                 allow_stretch: False
                 keep_ratio: True
                 size_hint_y: None
-                height: dp(500)
-
-            ButtonMenu:
+                height: dp(600)
+                pos_hint: {"center_x": 0.5, "center_y": 5}
+            
+            ButtonIcon:
                 text: " PLAY "
                 size_hint_y: None
                 height: dp(120)
+                pos_hint: {"center_x": 0.5, "center_y": 0.6}
+                color: from_hex(text_color)
+                font_name: 'assets/Minecraft.ttf'
+                font_size: "56sp"
+                width: self.texture_size[0] + dp(60)
                 on_press:
                     root.go_game()
+            
+            Widget:
+                size_hint_y: 0.1
 
         Widget:
-            size_hint_y: 0.0
+            size_hint_y: 0.1
 
         BoxLayout:
             size_hint_y: 0.15
@@ -155,39 +218,119 @@
             ButtonIcon:
                 text: "\uE121"
                 on_press:
-                    app.stop()
+                    ConfirmExitPopup().open()
+
+
+<ConfirmExitPopup>:
+    size_hint: 0.6, 0.35
+    auto_dismiss: False
+    title: ''
+    background_color: 0, 0, 0, 0.7
+
+    BoxLayout:
+        orientation: 'vertical'
+        padding: dp(20)
+        spacing: dp(20)
+
+        Label:
+            text: 'Exit the game?'
+            font_size: '32sp'
+            halign: 'center'
+            valign: 'middle'
+            color: from_hex(text_color)
+            text_size: self.size
+
+        BoxLayout:
+            spacing: dp(20)
+
+            ButtonMenu:
+                text: 'Yes'
+                on_press: app.stop()
+
+            ButtonMenu:
+                text: 'No'
+                on_press: root.dismiss()
 
 
 <Settings>:
+    canvas.before:
+        Color:
+            rgba: from_hex(main_color)
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
     BoxLayout:
-        orientation: "vertical"
-        padding: "30dp"
-        spacing: "20dp"
+        orientation: 'vertical'
+        spacing: dp(10)
+        padding: dp(20)
 
+        # Header
         Label:
-            text: "Settings"
-            font_size: "40sp"
-            color: 1, 1, 1, 1
-            canvas.before:
-                # Blur background for settings title
-                Color:
-                    rgba: 0, 0, 0, 0.5
-                RoundedRectangle:
-                    size: self.size[0] + dp(30), self.size[1] + dp(30)
-                    pos: self.pos[0] - dp(15), self.pos[1] - dp(15)
-                    radius: [dp(15)]
-                Color:
-                    rgba: 0.1, 0.1, 0.3, 0.4
-                RoundedRectangle:
-                    size: self.size[0] + dp(20), self.size[1] + dp(20)
-                    pos: self.pos[0] - dp(10), self.pos[1] - dp(10)
-                    radius: [dp(12)]
+            text: 'Settings'
+            font_size: '32sp'
+            color: text_color
+            size_hint_y: None
+            height: dp(60)
 
+        # Particle Effects Toggle
+        BoxLayout:
+            orientation: 'horizontal'
+            size_hint_y: None
+            height: dp(60)
+            spacing: dp(20)
+
+            Label:
+                text: 'Particle Effects'
+                font_size: '20sp'
+                color: text_color
+                size_hint_x: 0.6
+
+            CheckBox:
+                group: None
+                active: True
+                size_hint_x: 0.4
+                on_active:
+                    # play_sound('toggle')  # Future sound placeholder
+                    pass
+
+        # Volume Slider
+        BoxLayout:
+            orientation: 'horizontal'
+            size_hint_y: None
+            height: dp(60)
+            spacing: dp(20)
+
+            Label:
+                text: 'Volume'
+                font_size: '20sp'
+                color: text_color
+                size_hint_x: 0.6
+
+            Slider:
+                id: volume_slider
+                min: 0
+                max: 100
+                value: 100
+                size_hint_x: 0.4
+                on_value:
+                    # Update global music volume
+                    from main import bg_music
+                    bg_music.set_volume(self.value / 100.0)
+
+        # Spacer
+        Widget:
+            size_hint_y: 1
+
+        # Back Button
         ButtonMenu:
-            text: "Back"
-            size_hint_y: 0.2
-            on_press:
+            text: 'Back'
+            size_hint_y: None
+            height: dp(60)
+            on_release:
                 root.go_menu()
+                # play_sound('back')  # Future sound placeholder
+
 
 <RotatedImage>:
     canvas.before:
@@ -206,12 +349,13 @@
     size: dp(200), dp(200)
     opacity: 0
     scale: 1.0
+    color: 1, 1, 1, 1
+
     canvas.before:
         PushMatrix
         Scale:
             origin: self.center
             x: self.scale
-            y: self.scale
         Rotate:
             angle: self.angle
             axis: 0, 0, 1
@@ -249,7 +393,8 @@
             # Верхнє меню
             BoxLayout:
                 size_hint_y: 0.12
-                
+                padding: [0, 0, dp(20), 0]  # небольшой отступ справа для кнопки "Дом"
+
                 Widget:
                     size_hint_x: None
                     width: dp(70)
@@ -261,52 +406,32 @@
                     size_hint_x: 0.4
                     pos_hint: {'center_x': 0.9}
                     halign: 'center'
-                    color: 1, 1, 1, 1
-                    canvas.before:
-                        # Blur background for score
-                        Color:
-                            rgba: 0, 0, 0, 0.5
-                        RoundedRectangle:
-                            size: self.size[0] + dp(280), self.size[1] + dp(100)
-                            pos: self.pos[0] - dp(220), self.pos[1] - dp(50)
-                            radius: [dp(25)]
-                        Color:
-                            rgba: 0.1, 0.1, 0.3, 0.4
-                        RoundedRectangle:
-                            size: self.size[0] + dp(250), self.size[1] + dp(85)
-                            pos: self.pos[0] - dp(200), self.pos[1] - dp(42)
-                            radius: [dp(22)]
-                        Color:
-                            rgba: 0.2, 0.2, 0.4, 0.3
-                        RoundedRectangle:
-                            size: self.size[0] + dp(220), self.size[1] + dp(70)
-                            pos: self.pos[0] - dp(180), self.pos[1] - dp(35)
-                            radius: [dp(20)]
+                    color: from_hex(text_color)
 
                 # Кнопка-іконка "Дім"
                 ButtonIcon:
                     text: '\uE08A'
                     width: dp(70)
                     height: dp(90)
-                    color: 1, 1, 1, 1
+                    color: from_hex(text_color)
                     canvas.before:
-                        # Light transparent shadow
+                        # Light shadow
                         Color:
-                            rgba: 0, 0, 0, 0.2
+                            rgba: 0, 0, 0, 0.18
                         RoundedRectangle:
                             size: self.size[0] + dp(8), self.size[1] + dp(8)
                             pos: self.pos[0] - dp(4), self.pos[1] - dp(4)
                             radius: [dp(20)]
-                        # Gradient background - higher contrast
+                        # Gradient background - use main palette
                         Color:
-                            rgba: 0.95, 0.2, 0.2, 1 if self.state == 'normal' else 0.8, 0.1, 0.1, 1
+                            rgba: from_hex(main_color_dark) if self.state == 'down' else from_hex(main_color)
                         RoundedRectangle:
                             size: self.size
                             pos: self.pos
                             radius: [dp(20)]
-                        # Stronger inner glow
+                        # Inner glow
                         Color:
-                            rgba: 1, 0.6, 0.6, 0.8
+                            rgba: from_hex(accent_color) + [0.22] if self.state == 'normal' else from_hex(accent_color_neon) + [0.35]
                         RoundedRectangle:
                             size: self.size[0] - dp(8), self.size[1] - dp(8)
                             pos: self.pos[0] + dp(4), self.pos[1] + dp(4)
@@ -357,12 +482,38 @@
             BoxLayout:
                 size_hint_y: 0.12
                 spacing: "20dp"
+                padding: [dp(20), 0, 0, 0]  # небольшой отступ слева
 
-                # Кнопка-іконка "Налаштування"
-                ButtonMenu:
+                # Кнопка-іконка "Налаштування" слева (чуть выше)
+                ButtonIcon:
                     font_name: 'assets/typicons.ttf'
                     text: '\uE04F'
                     size_hint_x: None
                     font_size: '38sp'
-                    pos_hint: {'y': 0}
+                    pos_hint: {'y': 0.05}
+                    canvas.before:
+                        # Light shadow
+                        Color:
+                            rgba: 0, 0, 0, 0.18
+                        RoundedRectangle:
+                            size: self.size[0] + dp(8), self.size[1] + dp(8)
+                            pos: self.pos[0] - dp(4), self.pos[1] - dp(4)
+                            radius: [dp(20)]
+                        # Gradient background - use main palette
+                        Color:
+                            rgba: from_hex(main_color_dark) if self.state == 'down' else from_hex(main_color)
+                        RoundedRectangle:
+                            size: self.size
+                            pos: self.pos
+                            radius: [dp(20)]
+                        # Inner glow
+                        Color:
+                            rgba: from_hex(accent_color) + [0.22] if self.state == 'normal' else from_hex(accent_color_neon) + [0.35]
+                        RoundedRectangle:
+                            size: self.size[0] - dp(8), self.size[1] - dp(8)
+                            pos: self.pos[0] + dp(4), self.pos[1] + dp(4)
+                            radius: [dp(16)]
                     on_press: root.go_settings()
+
+                # Пустое пространство справа
+                Widget:
