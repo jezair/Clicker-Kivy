@@ -176,14 +176,12 @@ class ClickerApp(App):
     ]
 
     def build(self):
-        # Шляхи, які будемо пробувати
         base_paths = [
-            'assets/audios/music.mp3',  # твій mp3
-            'assets/audios/music.ogg',  # спроба ogg
-            'assets/audios/music.wav'   # спроба wav
+            'assets/audios/music.mp3',
+            'assets/audios/music.ogg',
+            'assets/audios/music.wav'
         ]
 
-        # Перевіримо відносні/абсолютні шляхи та наявність файлу
         found = False
         for p in base_paths:
             if os.path.exists(p):
@@ -203,10 +201,8 @@ class ClickerApp(App):
         else:
             try:
                 self.music.volume = 0.5
-                # деякі провайдери не мають атрибута loop — перевіряємо
                 if hasattr(self.music, "loop"):
                     self.music.loop = True
-                # Спробуємо запустити
                 status = self.music.play()
                 print("Attempted to play music, play() returned:", status)
             except Exception as e:
