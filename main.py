@@ -55,6 +55,7 @@ class Fish(RotatedImage):
     angle = NumericProperty(0)
 
     def on_kv_post(self, base_widget):
+        # GAME_SCREEN — это экран Game
         self.GAME_SCREEN = self.parent.parent.parent
         return super().on_kv_post(base_widget)
 
@@ -65,6 +66,7 @@ class Fish(RotatedImage):
     def new_fish(self, *args):
         self.stop_all_movement()
 
+        # выбираем текущую рыбу из уровня
         self.fish_current = app.LEVELS[app.LEVEL][self.fish_index]
         self.source = app.FISHES[self.fish_current]['source']
         self.hp_current = app.FISHES[self.fish_current]['hp']
@@ -169,10 +171,12 @@ class Fish(RotatedImage):
             else:
                 self.defeated()
 
+                # если в текущем уровне есть следующая рыба — увеличиваем индекс и показываем следующую
                 if len(app.LEVELS[app.LEVEL]) > self.fish_index + 1:
                     self.fish_index += 1
                     Clock.schedule_once(self.new_fish, 1.2)
                 else:
+                    # уровень пройден
                     Clock.schedule_once(self.GAME_SCREEN.level_complete, 1.2)
 
         return super().on_touch_down(touch)
@@ -183,9 +187,13 @@ class Game(Screen):
 
     def on_pre_enter(self, *args):
         self.score = 0
-        app.LEVEL = 0
-        self.ids.level_complete.opacity = 0
-        self.ids.fish.fish_index = 0
+        app.LEVEL = 0  # стартовый уровень при входе в игру
+        # прячем сообщение о завершении уровня
+        if hasattr(self.ids, "level_complete"):
+            self.ids.level_complete.opacity = 0
+        # обнуляем индекс текущей рыбы
+        if hasattr(self.ids, "fish"):
+            self.ids.fish.fish_index = 0
         return super().on_pre_enter(*args)
 
     def on_enter(self, *args):
@@ -193,10 +201,38 @@ class Game(Screen):
         return super().on_enter(*args)
 
     def start_game(self):
+        # стартует текущая волна/уровень
+        # если уровня нет (на всякий случай), сбрасываем на 0
+        if app.LEVEL >= len(app.LEVELS):
+            app.LEVEL = 0
+        self.ids.fish.fish_index = 0
         self.ids.fish.new_fish()
 
     def level_complete(self, *args):
-        self.ids.level_complete.opacity = 1
+        # показываем оверлей/метку прохождения уровня
+        if hasattr(self.ids, "level_complete"):
+            self.ids.level_complete.opacity = 1
+
+        # обработаем переход на следующий уровень
+        def proceed(dt):
+            # скрываем надпись
+            if hasattr(self.ids, "level_complete"):
+                self.ids.level_complete.opacity = 0
+
+            # если есть следующий уровень — переходим на него
+            if app.LEVEL + 1 < len(app.LEVELS):
+                app.LEVEL += 1
+                # сбрасываем индекс рыбы и стартуем следующий уровень
+                self.ids.fish.fish_index = 0
+                self.start_game()
+            else:
+                # если это был последний уровень — можно показать финал или вернуть в меню
+                # я сделал возврат в меню и сброс уровня
+                app.LEVEL = 0
+                self.go_home()
+
+        # ждем небольшой паузы, чтобы проиграть анимацию
+        Clock.schedule_once(proceed, 1.2)
 
     def go_home(self):
         self.manager.current = "menu"
@@ -204,18 +240,46 @@ class Game(Screen):
 
 
 class ClickerApp(App):
+    # Текущий уровень (index в LEVELS)
     LEVEL = 0
 
+    # --- ПАРАМЕТРЫ: отредактируй тут, чтобы менять сложность / уровни ---
+    LEVEL_COUNT = 10  # сколько уровней сгенерировать
+    BASE_FISHES = ['fish1', 'fish2']  # если хочешь, добавь сюда новые 'fish3' и т.д.
+    # -------------------------------------------------------------------
+
+    # Определение рыб — если у тебя есть только 2 спрайта, оставь как есть.
     FISHES = {
         'fish1': {'source': 'assets/images/fish_01.png', 'hp': 10},
         'fish2': {'source': 'assets/images/fish_02.png', 'hp': 20}
     }
 
-    LEVELS = [
-        ['fish1', 'fish1', 'fish2']
-    ]
+    # LEVELS будет сгенерирован в build() на основе LEVEL_COUNT
+    LEVELS = []
 
     def build(self):
+        # Генерируем уровни программно: с ростом количества рыб и долей 'тяжёлых' рыб
+        self.LEVELS = []
+        for lvl in range(1, self.LEVEL_COUNT + 1):
+            # количество рыбин на уровне (можно менять формулу)
+            count = 2 + lvl // 2  # примерно растёт по уровню
+            level_list = []
+            # Чем выше уровень — тем больше шанс появится 'fish2' (более сильная)
+            for i in range(count):
+                weight = random.random()
+                # на ранних уровнях чаще fish1, на поздних — fish2
+                threshold = min(0.2 + lvl * 0.08, 0.9)
+                if weight < threshold:
+                    level_list.append('fish2')
+                else:
+                    level_list.append('fish1')
+            self.LEVELS.append(level_list)
+
+        # Пример: можно вывести дебаг-инфо в консоль
+        print("Generated LEVELS:")
+        for i, lv in enumerate(self.LEVELS):
+            print(f"Level {i}: {lv}")
+
         sm = ScreenManager()
         sm.add_widget(Menu(name="menu"))
         sm.add_widget(Game(name="game"))
