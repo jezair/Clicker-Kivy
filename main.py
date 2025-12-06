@@ -191,6 +191,10 @@ class Fish(RotatedImage):
     def on_touch_down(self, touch):
         # Клік не обробляється, якщо не потрпаляє в рибу 
         # або анімація зараз програється або заблокована взаємодія
+        if self.parent.parent.parent.hardmodee and 0 <= int(-self.parent.parent.parent.hp):
+            self.parent.parent.parent.hp = 0
+            Clock.schedule_once(self.parent.parent.parent.lose_game, 1.2)
+            return
         if not self.collide_point(*touch.pos) or self.anim_play or self.interaction_block:
             return
 
