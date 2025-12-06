@@ -1,64 +1,143 @@
 from kivy.app import App
 from kivy.uix.screenmanager import Screen, ScreenManager
 from kivy.core.window import Window
-from kivy.lang import Builder
-from kivy.utils import hex_colormap, colormap
-from kivy.animation import Animation
-from kivy.metrics import sp, dp
 from kivy.uix.image import Image
-from kivy import platform
+from kivy.animation import Animation
 from kivy.properties import NumericProperty
 from kivy.clock import Clock
+from kivy import platform
+import random
+import math
 
 
 class Menu(Screen):
-    def __init__(self, **kw):
-        super().__init__(**kw)
-
-    # Перехід до екрана гри
     def go_game(self, *args):
         self.manager.current = "game"
         self.manager.transition.direction = "left"
 
-    # Перехід до екрана налаштувань
     def go_settings(self, *args):
         self.manager.current = "settings"
         self.manager.transition.direction = "up"
 
-    # Вихід з програми
     def exit_app(self, *args):
         app.stop()
 
 
 class Settings(Screen):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-    # Повернення до меню
     def go_menu(self, *args):
         self.manager.current = "menu"
         self.manager.transition.direction = "down"
 
 
-# Клас для обертання картинок; в класі, який спадковує потрібно дадати властивість angle
 class RotatedImage(Image):
     ...
 
 
-# КЛАС РИБИ: Обробка кліків, створення "нової" риби
-class Fish(RotatedImage):
-    # Властивість для забезпечення програвання однієї анімації в один проміжок часу
+# -----------------------------------------------------------
+#                       МИНА
+# -----------------------------------------------------------
+class Mine(RotatedImage):
+    angle = NumericProperty(0)
+    wave_time = 0
     anim_play = False
     interaction_block = True
-    COEF_MULT = 1.5
-    fish_current = None
-    fish_index = 0
-    hp_current = None
+
+    def on_kv_post(self, base_widget):
+        try:
+            self.GAME_SCREEN = self.parent.parent  # Game screen
+        except:
+            self.GAME_SCREEN = None
+        return super().on_kv_post(base_widget)
+
+    def new_mine(self, near):
+        self.source = "assets/images/mine.png"
+        self.opacity = 1
+        self.interaction_block = False
+
+        # размер относительно рыбы
+        self.size = (near.width * 0.45, near.height * 0.45)
+
+        x = near.x + near.width + 20
+        if x + self.width > self.GAME_SCREEN.width:
+            x = near.x - self.width - 20
+
+        y = near.y + (near.height - self.height) / 2
+        self.pos = (x, y)
+
+        # движение + волна
+        Clock.schedule_interval(self.update_wave, 1/60)
+        self.start_random_move()
+
+    def start_random_move(self, *args):
+        if self.interaction_block:
+            return
+
+        min_x = 0
+        max_x = self.GAME_SCREEN.width - self.width
+        min_y = 0
+        max_y = self.GAME_SCREEN.height - self.height
+
+        nx = random.randint(min_x, max_x)
+        ny = random.randint(min_y, max_y)
+
+        dist = math.hypot(nx - self.x, ny - self.y)
+        duration = dist / 150
+
+        anim = Animation(x=nx, y=ny, duration=duration, t="linear")
+        anim.bind(on_complete=self.start_random_move)
+        anim.start(self)
+
+    def update_wave(self, dt):
+        if self.interaction_block:
+            return
+        self.wave_time += dt * 4
+        self.y += math.sin(self.wave_time) * 6
+        self.y = max(0, min(self.y, self.GAME_SCREEN.height - self.height))
+
+    def explode(self):
+        self.interaction_block = True
+        big = (self.width * 2.5, self.height * 2.5)
+        anim = Animation(size=big, duration=0.25) + Animation(opacity=0, duration=0.25)
+        anim.bind(on_complete=lambda *a: self.remove())
+        anim.start(self)
+
+    def remove(self):
+        try:
+            Clock.unschedule(self.update_wave)
+            Animation.cancel_all(self)
+        except:
+            pass
+        if self.parent:
+            self.parent.remove_widget(self)
+
+    def on_touch_down(self, touch):
+        if not self.collide_point(*touch.pos):
+            return super().on_touch_down(touch)
+
+        if self.interaction_block:
+            return super().on_touch_down(touch)
+
+        # -2 очка
+        self.GAME_SCREEN.score = max(0, self.GAME_SCREEN.score - 2)
+        self.explode()
+        return True
+
+
+# -----------------------------------------------------------
+#                       РЫБА
+# -----------------------------------------------------------
+class Fish(RotatedImage):
     angle = NumericProperty(0)
+    wave_time = 0
+    anim_play = False
+    interaction_block = True
+
+    fish_index = 0
+    hp_current = 0
+    COEF_MULT = 1.5
 
     def on_kv_post(self, base_widget):
         self.GAME_SCREEN = self.parent.parent.parent
-
         return super().on_kv_post(base_widget)
 
     def new_fish(self, *args):
@@ -66,82 +145,111 @@ class Fish(RotatedImage):
         self.source = app.FISHES[self.fish_current]['source']
         self.hp_current = app.FISHES[self.fish_current]['hp']
 
+        self.wave_time = 0
         self.swim()
 
     def swim(self):
-        self.pos = (self.GAME_SCREEN.x - self.width, self.GAME_SCREEN.height / 2)
         self.opacity = 1
-        swim = Animation(x=self.GAME_SCREEN.width / 2 - self.width / 2, duration=1)
-        swim.start(self)
+        self.interaction_block = False
 
-        swim.bind(on_complete=lambda w, a: setattr(self, "interaction_block", False))
+        self.x = (self.GAME_SCREEN.width - self.width) / 2
+        self.y = (self.GAME_SCREEN.height - self.height) / 2
 
-    # Перемогли рибу :)
-    def defeated(self):
-        self.interaction_block = True
-        # Анімація обертання
-        anim = Animation(angle=self.angle + 360, d=1, t='in_cubic')
+        Clock.schedule_interval(self.update_wave, 1 / 60)
+        self.start_random_move()
 
-        # Запам'ятовуємо старі розмір і позицію для анімації зменьшення
-        old_size = self.size.copy()
-        old_pos = self.pos.copy()
-        # Новий розмір
-        new_size = (self.size[0] * self.COEF_MULT * 3, self.size[1] * self.COEF_MULT * 3)
-        # Нова позиція риби при збільшенні
-        new_pos = (self.pos[0] - (new_size[0] - self.size[0]) / 2, self.pos[1] - (new_size[0] - self.size[1]) / 2)
-        # АНІМАЦІЯ ЗБІЛЬШЕННЯ/ЗМЕНЬШЕННЯ
-        anim &= Animation(size=(new_size), t='in_out_bounce') + Animation(size=(old_size), duration=0)
-        anim &= Animation(pos=(new_pos), t='in_out_bounce') + Animation(pos=(old_pos), duration=0)
+        # → Спавним мину чуть позже
+        Clock.schedule_once(self.spawn_mine, 0.6)
 
-        # anim = Animation(size=(self.size[0] * self.COEF_MULT * 2, self.size[1] * self.COEF_MULT * 2)) + Animation(size=old_size)
-        anim &= Animation(opacity=0)  # + Animation(opacity = 1)
+    def spawn_mine(self, dt):
+        mine = Mine()
+        self.GAME_SCREEN.add_widget(mine)
+        mine.GAME_SCREEN = self.GAME_SCREEN
+        mine.new_mine(self)
+
+    def start_random_move(self, *args):
+        if self.interaction_block:
+            return
+
+        min_x = 0
+        max_x = self.GAME_SCREEN.width - self.width
+        min_y = 0
+        max_y = self.GAME_SCREEN.height - self.height
+
+        nx = random.randint(min_x, max_x)
+        ny = random.randint(min_y, max_y)
+
+        dist = math.hypot(nx - self.x, ny - self.y)
+        duration = dist / 150
+
+        anim = Animation(x=nx, y=ny, duration=duration, t="linear")
+        anim.bind(on_complete=self.start_random_move)
         anim.start(self)
 
-    # КЛІК!
+    def update_wave(self, dt):
+        if self.interaction_block:
+            return
+
+        self.wave_time += dt * 4
+        self.y += math.sin(self.wave_time) * 8
+        self.y = max(0, min(self.y, self.GAME_SCREEN.height - self.height))
+
+    def defeated(self):
+        self.interaction_block = True
+        anim = Animation(angle=self.angle + 360, d=1, t='in_cubic')
+
+        old_size = self.size.copy()
+        old_pos = self.pos.copy()
+        new_size = (old_size[0] * 3, old_size[1] * 3)
+        new_pos = (
+            old_pos[0] - (new_size[0] - old_size[0]) / 2,
+            old_pos[1] - (new_size[1] - old_size[1]) / 2
+        )
+
+        anim &= Animation(size=new_size, t='in_out_bounce') + Animation(size=old_size, duration=0)
+        anim &= Animation(pos=new_pos, t='in_out_bounce') + Animation(pos=old_pos, duration=0)
+        anim &= Animation(opacity=0)
+        anim.start(self)
+
     def on_touch_down(self, touch):
-        # Клік не обробляється, якщо не потрпаляє в рибу 
-        # або анімація зараз програється або заблокована взаємодія
         if not self.collide_point(*touch.pos) or self.anim_play or self.interaction_block:
             return
 
-        if not self.anim_play and not self.interaction_block:
-            self.hp_current -= 1
-            self.GAME_SCREEN.score += 1
+        self.hp_current -= 1
+        self.GAME_SCREEN.score += 1
 
-            # Клік призвів до змеьшення hp риби
-            if self.hp_current > 0:
-                # Запам'ятовуємо старі розмір і позицію для анімації зменьшення
-                old_size = self.size.copy()
-                old_pos = self.pos.copy()
+        if self.hp_current > 0:
+            old_size = self.size.copy()
+            old_pos = self.pos.copy()
+            new_size = (old_size[0] * self.COEF_MULT, old_size[1] * self.COEF_MULT)
+            new_pos = (
+                old_pos[0] - (new_size[0] - old_size[0]) / 2,
+                old_pos[1] - (new_size[1] - old_size[1]) / 2
+            )
 
-                # Новий розмір
-                new_size = (self.size[0] * self.COEF_MULT, self.size[1] * self.COEF_MULT)
-                # Нова позиція риби при збільшенні
-                new_pos = (self.pos[0] - (new_size[0] - self.size[0]) / 2,
-                           self.pos[1] - (new_size[0] - self.size[1]) / 2)
+            zoom = Animation(size=new_size, duration=0.05) + Animation(size=old_size, duration=0.05)
+            zoom &= Animation(pos=new_pos, duration=0.05) + Animation(pos=old_pos, duration=0.05)
 
-                # АНІМАЦІЯ ЗБІЛЬШЕННЯ/ЗМЕНЬШЕННЯ
-                zoom_anim = Animation(size=(new_size), duration=0.05) + Animation(size=(old_size), duration=0.05)
-                zoom_anim &= Animation(pos=(new_pos), duration=0.05) + Animation(pos=(old_pos), duration=0.05)
+            zoom.start(self)
+            self.anim_play = True
+            zoom.bind(on_complete=lambda *a: setattr(self, "anim_play", False))
 
-                zoom_anim.start(self)
-                self.anim_play = True
+        else:
+            self.defeated()
 
-                zoom_anim.bind(on_complete=lambda *args: setattr(self, "anim_play", False))
-            # Клік призвів до знищення риби
+            # следующая рыба или конец уровня
+            if len(app.LEVELS[app.LEVEL]) > self.fish_index + 1:
+                self.fish_index += 1
+                Clock.schedule_once(self.new_fish, 1.2)
             else:
-                self.defeated()
-
-                # Запуск нової риби або анымації завершення рівня після 1 секунди програвання зникнення риби
-                if len(app.LEVELS[app.LEVEL]) > self.fish_index + 1:
-                    self.fish_index += 1
-                    Clock.schedule_once(self.new_fish, 1.2)
-                else:
-                    Clock.schedule_once(self.GAME_SCREEN.level_complete, 1.2)
+                Clock.schedule_once(self.GAME_SCREEN.level_complete, 1.2)
 
         return super().on_touch_down(touch)
 
 
+# -----------------------------------------------------------
+#                       СЦЕНА ИГРЫ
+# -----------------------------------------------------------
 class Game(Screen):
     score = NumericProperty(0)
 
@@ -150,19 +258,13 @@ class Game(Screen):
         app.LEVEL = 0
         self.ids.level_complete.opacity = 0
         self.ids.fish.fish_index = 0
-
         return super().on_pre_enter(*args)
 
     def on_enter(self, *args):
-        self.start_game()
-
+        self.ids.fish.new_fish()
         return super().on_enter(*args)
 
-    def start_game(self):
-        self.ids.fish.new_fish()
-
     def level_complete(self, *args):
-        # self.ids.level_complete.opacity = 1
         self.ids.level_complete.opacity = 1
 
     def go_home(self):
@@ -174,10 +276,8 @@ class ClickerApp(App):
     LEVEL = 0
 
     FISHES = {
-        'fish1':
-            {'source': 'assets/images/fish_01.png', 'hp': 10},
-        'fish2':
-            {'source': 'assets/images/fish_02.png', 'hp': 20}
+        'fish1': {'source': 'assets/images/fish_01.png', 'hp': 10},
+        'fish2': {'source': 'assets/images/fish_02.png', 'hp': 20}
     }
 
     LEVELS = [
@@ -189,7 +289,6 @@ class ClickerApp(App):
         sm.add_widget(Menu(name="menu"))
         sm.add_widget(Game(name="game"))
         sm.add_widget(Settings(name="settings"))
-
         return sm
 
 
