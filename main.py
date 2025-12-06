@@ -77,8 +77,10 @@ class Mine(RotatedImage):
         min_y = 0
         max_y = self.GAME_SCREEN.height - self.height
 
-        nx = random.randint(min_x, max_x)
-        ny = random.randint(min_y, max_y)
+        nx = random.randint(int(min_x), int(max_x))
+
+        ny = random.randint(int(min_x), int(max_x))
+
 
         dist = math.hypot(nx - self.x, ny - self.y)
         duration = dist / 150
@@ -172,12 +174,14 @@ class Fish(RotatedImage):
             return
 
         min_x = 0
-        max_x = self.GAME_SCREEN.width - self.width
+        max_x = self.GAME_SCREEN.width - self.width + 100
         min_y = 0
-        max_y = self.GAME_SCREEN.height - self.height
+        max_y = self.GAME_SCREEN.height - self.height - 100
 
-        nx = random.randint(min_x, max_x)
-        ny = random.randint(min_y, max_y)
+        nx = random.randint(int(min_x), int(max_x))
+
+        ny = random.randint(int(min_x), int(max_x))
+
 
         dist = math.hypot(nx - self.x, ny - self.y)
         duration = dist / 150
